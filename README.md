@@ -9,7 +9,7 @@ This repository contains the code for the paper:
 
 We investigate whether the predictive value of seismic statistical features (SSFs) for earthquake prediction stems from their ability to capture domain-specific knowledge. We compare 60 SSFs against 428 generic time series features from [tsfresh](https://tsfresh.readthedocs.io/), training XGBoost models to predict whether an earthquake of magnitude M ≥ 5 will occur within the next 15 days.
 
-Key finding: models using SSFs achieve AUCs up to **0.87**, while models using tsfresh features alone cannot substantially exceed random performance.
+Key finding: models using SSFs achieve better performance in terms of AUC, while models using tsfresh features alone cannot substantially exceed random performance.
 
 ## Data
 
@@ -26,7 +26,7 @@ cd tsf_origin
 pip install -r requirements.txt
 ```
 
-**Python 3.9+** is recommended.
+**Python 3.8+** is recommended.
 
 ## Project Structure
 
@@ -52,7 +52,7 @@ Edit the configuration section in `main.py` to set your region and file names, t
 python main.py
 ```
 
-By default, `main.py` is configured for the **Chile** region with a magnitude threshold of **M ≥ 5**. To run preprocessing from raw catalogue data, uncomment the `preprocess()` call in `main.py`.
+By default, `main.py` is configured for the **Chile** region with a magnitude threshold of **M ≥ 5** as an example. To run preprocessing from raw catalogue data, uncomment the `preprocess()` call in `main.py`.
 
 ### Using pre-processed data
 
@@ -62,31 +62,17 @@ If you already have the processed feature files (e.g., from the figshare dataset
 
 The experiment runs three comparisons for each region:
 
-1. **Indicator features only** — 60 seismic statistical features
-2. **tsfresh features only** — generic time series features extracted from the magnitude series
+1. **SSF only** — 60 seismic statistical features
+2. **tsfresh features only** — generic time series features extracted using tsfresh
 3. **Mixed features** — both combined
 
 For each, the pipeline:
-1. Performs initial hyperparameter tuning (GridSearchCV with PredefinedSplit)
+1. Performs initial hyperparameter search (GridSearchCV with PredefinedSplit)
 2. Runs BorutaShap feature selection
 3. Fine-tunes hyperparameters on selected features
 4. Evaluates on the held-out test set (AUC, MCC, SHAP importance)
 
-## Key Design Decisions
-
-- **No data leakage in imputation**: tsfresh's built-in `impute` is intentionally avoided. Instead, missing/infinite values are replaced using only past data (see `tsf_utils.py`).
-- **50-event gap**: A gap of 50 events (matching the sliding window size) is maintained between train/validation and train/test splits to prevent information leakage.
-- **Beta/Z recomputation**: For the whole dataset, Beta and Z values are recomputed using only the training period as the background, since the original MATLAB-computed values use the full catalogue.
-- **Normalisation**: Only the 60 seismic indicator features are z-score standardised (using training statistics). tsfresh features are left unnormalised as some are binary.
-
-## Regions
-
-The paper evaluates three seismically active regions:
-- **Chile** (M ≥ 4.5 and M ≥ 5)
-- **Japan** (M ≥ 5)
-- **Switzerland** (M ≥ 2.5)
-
-To run a different region, update the configuration constants at the top of `main.py`.
+To run a different region, update the configuration settings at the top of `main.py`.
 
 ## Citation
 
