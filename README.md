@@ -52,11 +52,7 @@ Edit the configuration section in `main.py` to set your region and file names, t
 python main.py
 ```
 
-By default, `main.py` is configured for the **Chile** region with a magnitude threshold of **M ≥ 5** as an example. To run preprocessing from raw catalogue data, uncomment the `preprocess()` call in `main.py`.
-
-### Using pre-processed data
-
-If you already have the processed feature files (e.g., from the figshare dataset), place them in `data/` and run `main.py` directly. It will load the pre-processed CSVs and run feature selection, tuning, and evaluation.
+By default, `main.py` is configured for the **Chile** region with a magnitude threshold of **M ≥ 5** as an example. 
 
 ### Pipeline stages
 
