@@ -63,11 +63,11 @@ class DataProcessor:
         Folder name for reading/saving data (relative to script directory).
     """
 
-    def __init__(self, raw_whole, indicator_train_val, indicator_whole,
+    def __init__(self, raw_whole, SSF_train_val, SSF_whole,
                  event_n, percent_drop, thresh, save_folder):
         self.raw_wh = raw_whole
-        self.indicator_tv = indicator_train_val
-        self.indicator_wh = indicator_whole
+        self.indicator_tv = SSF_train_val
+        self.indicator_wh = SSF_whole
         self.event_n = event_n
         self.percent_drop = percent_drop
         self.thresh = thresh
@@ -82,18 +82,6 @@ class DataProcessor:
         For the whole dataset (not trainVal), Beta and Z values are
         recomputed using only the training period as background to
         prevent data leakage.
-
-        Parameters
-        ----------
-        data_name : str
-            Name of the indicator CSV file (without extension).
-        whole_data : pd.DataFrame, optional
-            Full catalogue (required for recomputing Beta/Z on whole data).
-
-        Returns
-        -------
-        pd.DataFrame
-            Indicator features with 'Actual Mag' target column.
         """
         file_path = find_path(self.save_folder, data_name)
         indicator_data = pd.read_csv(file_path, header=None, index_col=False)
@@ -127,19 +115,8 @@ class DataProcessor:
         from earlier rows where Actual Mag is within [-0.3, +0.2] of the
         current row's Actual Mag. This avoids data leakage by only using
         past data.
-
-        Parameters
-        ----------
-        df : pd.DataFrame
-            Indicator data with potential NaN values.
-
-        Returns
-        -------
-        pd.DataFrame
-            Imputed dataframe.
         """
         nan_col = df.columns[df.isna().any()].to_list()
-        logger.info(f" columns to impute{nan_col}")
         for col in nan_col:
             df_nan = df[col][df[col].isnull()]
             for index, row in df_nan.items():
@@ -153,40 +130,18 @@ class DataProcessor:
         return df
 
     def create_all_fs_data(self):
-        """
-        Run the full preprocessing pipeline.
-
-        Steps:
-        1. Split the raw catalogue into train/val/test.
-        2. Extract tsfresh features for both trainVal and whole datasets.
-        3. Read and clean seismic indicator features.
-        4. Combine indicator + tsfresh features.
-        5. Normalise using training statistics only.
-        6. Save to CSV.
-
-        Returns
-        -------
-        trainVal : pd.DataFrame
-            Processed training+validation dataset.
-        whole : pd.DataFrame
-            Processed complete dataset (for final train/test evaluation).
-        """
         file_path = find_path(self.save_folder, self.raw_wh)
         train_r, val, train, whole_data = data_split(file_path)
         val = combine_time_col(train)
         whole = combine_time_col(whole_data)
-        print(whole.shape)
 
         # Create tsfresh features for whole dataset
         windowed_data = id_create(whole, self.event_n)
         extracted_features_alldata = ts_features_extract(windowed_data)
         features_alldata = impute_replace(extracted_features_alldata, self.percent_drop)
-        print(features_alldata.shape)
 
         whole_with_test = self.read_indicators(self.indicator_wh, whole_data)
         whole_with_test = self.impute_na(whole_with_test)
-        print(f'whole ind: {whole_with_test.shape}')
-        logger.info(f'whole ind: {whole_with_test.shape}')
 
         whole_with_test = combine_all_fs(whole_with_test, features_alldata)
 
@@ -194,17 +149,14 @@ class DataProcessor:
         windowed_data = id_create(val, self.event_n)
         extracted_features_val = ts_features_extract(windowed_data)
         features_val = impute_replace(extracted_features_val, self.percent_drop)
-        print(f"val ts: {features_val.shape}")
 
         val = self.read_indicators(self.indicator_tv)
         val = self.impute_na(val)
-        logger.info(f'val ind: {val.shape}')
 
         val = combine_all_fs(val, features_val)
 
         self.trainVal = self.normalise(val)
         self.whole = self.normalise(whole_with_test)
-        logger.info(f'final trainVal and whole shapes: {self.trainVal.shape} {self.whole.shape}')
 
         self.save_data()
 
@@ -217,16 +169,6 @@ class DataProcessor:
 
         The tsfresh features (columns 60+) are NOT normalised because some
         are binary (0/1) indicators.
-
-        Parameters
-        ----------
-        data : pd.DataFrame
-            Combined feature set.
-
-        Returns
-        -------
-        pd.DataFrame
-            Normalised dataset.
         """
         train = data.iloc[:round(data.shape[0] * 0.7) - 50, :]
         mean = train.iloc[:, 0:60].mean()
@@ -236,7 +178,6 @@ class DataProcessor:
         return data
 
     def save_data(self):
-        """Save the processed trainVal and whole datasets to CSV."""
         save_name_trainVal = f'{self.raw_wh}_all_fs_trainVal_{self.thresh}'
         save_name_whole = f'{self.raw_wh}_all_fs_whole_{self.thresh}'
 

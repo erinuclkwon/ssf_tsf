@@ -53,15 +53,6 @@ def ts_features_extract(data):
     as it introduces data leakage. Imputation is handled separately by
     `impute_replace()` using only past data.
 
-    Parameters
-    ----------
-    data : pd.DataFrame
-        Windowed data with 'Time', 'Magnitude', and 'id' columns.
-
-    Returns
-    -------
-    pd.DataFrame
-        Extracted features indexed by window id.
     """
     extracted_features = extract_features(
         data[['Time', 'Magnitude', 'id']],
@@ -143,7 +134,6 @@ def replace(cols, replacement, features):
 
 
 def drop_linear_trend(df):
-    """Remove all columns containing 'linear' in their name."""
     columns = df.columns
     columns_retain = [x for x in columns if 'linear' not in x]
     return df[columns_retain]
@@ -160,18 +150,6 @@ def impute_replace(features, percent):
     4. Replace -inf with past minimum of that column.
     5. Replace NaN with past mean of that column.
     6. Drop linear trend features.
-
-    Parameters
-    ----------
-    features : pd.DataFrame
-        Raw tsfresh features.
-    percent : float
-        Maximum allowable NaN percentage per column.
-
-    Returns
-    -------
-    pd.DataFrame
-        Cleaned feature set.
     """
     features.dropna(axis=1, how='all', inplace=True)
 

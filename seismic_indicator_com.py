@@ -146,23 +146,6 @@ def background_compute(catalog, events_n):
 
 
 def replace_ZBeta(cat, betas, zs):
-    """
-    Replace the Beta and Z value columns in the indicator dataframe.
-
-    Parameters
-    ----------
-    cat : pd.DataFrame
-        Indicator dataframe with 'Beta Value' and 'Z Value' columns.
-    betas : list of float
-        New Beta values.
-    zs : list of float
-        New Z values.
-
-    Returns
-    -------
-    pd.DataFrame
-        Updated indicator dataframe.
-    """
     cat['Beta Value'] = betas
     cat['Z Value'] = zs
     return cat
